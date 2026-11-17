@@ -14,7 +14,10 @@ class HelpFlagsProcessor(ArgumentProcessor):
     """Processes help-related flags to provide cleaner help output."""
 
     def __init__(
-        self, command_type: str, required_args: List[str] | None = None
+        self,
+        command_type: str,
+        required_args: List[str] | None = None,
+        pytest_help_args: List[str] | None = None,
     ):
         """
         Initialize the help processor.
@@ -23,10 +26,12 @@ class HelpFlagsProcessor(ArgumentProcessor):
           command_type: The type of command (e.g., "fill", "consume",
                         "execute")
           required_args: The arguments that are required for the command to run
+          pytest_help_args: The arguments needed to display native pytest help
 
         """
         self.command_type = command_type
         self.required_args = required_args or []
+        self.pytest_help_args = pytest_help_args or []
 
     def process_args(self, args: List[str]) -> List[str]:
         """
@@ -41,7 +46,7 @@ class HelpFlagsProcessor(ArgumentProcessor):
             # And also add the required arguments to the help output
             return [f"--{self.command_type}-help"] + self.required_args
         elif ctx.params.get("pytest_help_flag"):
-            return ["--help"]
+            return ["--help"] + self.pytest_help_args
 
         return args
 

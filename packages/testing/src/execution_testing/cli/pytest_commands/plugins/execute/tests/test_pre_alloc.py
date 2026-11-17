@@ -1,12 +1,19 @@
 """Test the pre-allocation models used during test execution."""
 
+from inspect import unwrap
+from pathlib import Path
 from typing import Any
+from unittest.mock import Mock, patch
 
 import pytest
 
 from execution_testing.base_types import Address, Hash
+from execution_testing.forks import Prague
+from execution_testing.rpc import EthRPC
+from execution_testing.test_types import EOA
 
 from ...shared.address_stubs import StubAddress, StubEOA
+from .. import pre_alloc
 from ..pre_alloc import AddressStubs
 
 ADDR_1 = Address("0x0000000000000000000000000000000000000001")
@@ -15,6 +22,31 @@ TEST_PKEY = Hash(
     0x45A915E4D060149EB4365960E6A7A45F334393093061116B197E3240065FF2D8
 )
 TEST_ADDR = Address("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b")
+
+
+def test_proxy_deployment_warning_includes_session_fork(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Include the active fork in the manual deployment recovery command."""
+    eth_rpc = Mock(spec=EthRPC)
+    eth_rpc.get_code.return_value = b""
+
+    with patch(
+        "execution_testing.cli.pytest_commands.plugins.execute.pre_alloc."
+        "deploy_deterministic_factory_contract",
+        side_effect=RuntimeError("Deployment unavailable"),
+    ):
+        unwrap(pre_alloc.execute_required_contracts)(
+            session_fork=Prague,
+            session_worker_key=EOA(key=1),
+            eth_rpc=eth_rpc,
+            sender_funding_transactions_gas_price=1,
+            session_temp_folder=tmp_path,
+        )
+
+    assert (
+        "uv run execute deploy-required-contracts --fork Prague" in caplog.text
+    )
 
 
 @pytest.mark.parametrize(

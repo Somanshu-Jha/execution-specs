@@ -124,6 +124,69 @@ def test_all_execute_subcommands_help_no_conflicts(runner: CliRunner) -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "check_only",
+    [
+        pytest.param(False, id="deploy"),
+        pytest.param(True, id="check-only"),
+    ],
+)
+def test_deploy_required_contracts_requires_fork_before_rpc(
+    runner: CliRunner, check_only: bool
+) -> None:
+    """Reject a missing fork before accessing the RPC endpoint."""
+    args = [
+        "deploy-required-contracts",
+        "--rpc-endpoint=http://localhost:8545",
+        "--chain-id=1337",
+        "--rpc-seed-key=1",
+    ]
+    if check_only:
+        args.append("--check-only")
+
+    with patch(
+        "execution_testing.cli.pytest_commands.plugins.execute.rpc.remote.EthRPC",
+        side_effect=AssertionError("RPC accessed without --fork"),
+    ):
+        result = runner.invoke(execute, args)
+
+    assert result.exit_code == pytest.ExitCode.USAGE_ERROR, result.output
+    assert "the following arguments are required: --fork" in result.output
+
+
+@pytest.mark.parametrize("help_flag", ["--help", "--pytest-help"])
+def test_deploy_required_contracts_help_lists_fork(
+    runner: CliRunner, help_flag: str
+) -> None:
+    """Show the required fork option in both deployment help modes."""
+    result = runner.invoke(execute, ["deploy-required-contracts", help_flag])
+
+    assert result.exit_code == pytest.ExitCode.OK, result.output
+    assert any(
+        line.lstrip().startswith("--fork")
+        for line in result.output.splitlines()
+    ), result.output
+
+
+@pytest.mark.parametrize("fork_name", ["Prague", "Amsterdam"])
+def test_deploy_required_contracts_collects_with_explicit_fork(
+    runner: CliRunner, fork_name: str
+) -> None:
+    """Accept a valid explicit fork without requiring a running client."""
+    result = runner.invoke(
+        execute,
+        [
+            "deploy-required-contracts",
+            f"--fork={fork_name}",
+            "--collect-only",
+            "-q",
+        ],
+    )
+
+    assert result.exit_code == pytest.ExitCode.OK, result.output
+    assert "test_deploy_deterministic_deployment_contract" in result.output
+
+
 def test_execute_remote_leaks_chain_id_into_later_defaults(
     runner: CliRunner, tmp_path: Path
 ) -> None:

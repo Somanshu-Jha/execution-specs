@@ -36,7 +36,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         action="store",
         dest="fork",
         type=ForkAdapter.validate_python,
-        default=None,
+        required=True,
         help="Currently active fork of the network.",
     )
 
@@ -60,7 +60,7 @@ def check_only(request: pytest.FixtureRequest) -> bool:
 
 @pytest.fixture(scope="session")
 def session_fork(request: pytest.FixtureRequest) -> Fork:
-    """Return a default fork for the deploy command."""
+    """Return the active fork for the deploy command."""
     return request.config.option.fork
 
 

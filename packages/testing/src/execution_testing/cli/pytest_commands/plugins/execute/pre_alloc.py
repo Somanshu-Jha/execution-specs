@@ -179,7 +179,8 @@ def execute_required_contracts(
                     "Could not deploy the deterministic deployment proxy; "
                     "tests that require it will be skipped. To deploy it "
                     "manually against a different RPC endpoint run "
-                    "`uv run execute deploy-required-contracts`. "
+                    "`uv run execute deploy-required-contracts "
+                    f"--fork {session_fork.name()}`. "
                     f"Reason: {e}"
                 )
 

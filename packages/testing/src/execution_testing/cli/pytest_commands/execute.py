@@ -25,12 +25,15 @@ def _create_execute_subcommand(
     help_text: str,
     required_args: List[str] | None = None,
     command_logic_test_paths: List[Path] | None = None,
+    pytest_help_args: List[str] | None = None,
 ) -> click.Command:
     """Create an execute subcommand with standardized structure."""
     pytest_command = PytestCommand(
         config_file=config_file,
         argument_processors=[
-            HelpFlagsProcessor(f"execute-{command_name}", required_args)
+            HelpFlagsProcessor(
+                f"execute-{command_name}", required_args, pytest_help_args
+            )
         ],
         command_logic_test_paths=command_logic_test_paths,
     )
@@ -101,7 +104,9 @@ deploy_required_contracts = _create_execute_subcommand(
     required_args=[
         "--rpc-endpoint=http://localhost:8545",
         "--chain-id=1",
+        "--fork=Prague",
     ],
+    pytest_help_args=["--fork=Prague"],
     command_logic_test_paths=[
         EXECUTE_PATH / "execute_deploy_required_contracts.py"
     ],
